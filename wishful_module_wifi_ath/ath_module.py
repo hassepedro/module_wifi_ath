@@ -10,6 +10,7 @@ import platform
 import numpy as np
 import iptc
 from pytc.TrafficControl import TrafficControl
+from .csi import receiver as csi_receiver
 
 import wishful_module_wifi
 import wishful_upis as upis
@@ -280,6 +281,32 @@ class AthModule(wishful_module_wifi.WifiModule):
         except Exception as e:
             self.log.fatal("An error occurred in Dot80211Linux: %s" % e)
             raise Exception("An error occurred in Dot80211Linux: %s" % e)
+
+    @wishful_module.bind_function(upis.radio.get_csi)
+    def get_csi(self):
+        """
+        Reads the next csi values (complex coefficients). Requires installation of:
+        http://pdcc.ntu.edu.sg/wands/Atheros/
+        :param num_samples: the number of samples to read
+        :return: csi values as numpy matrix of dimension: num_samples x Ntx x Nrx x Nsc
+        """
+
+        # define receiver params
+        csi_dev = '/dev/CSI_dev'
+
+        # check CSI device
+        if not os.path.exists(csi_dev):
+            raise ValueError('Could not find CSI device: %s.' % csi_dev)
+
+        try:
+            debug = False
+            csi = csi_receiver.scan(debug=debug)
+
+            return csi
+
+        except Exception as e:
+            self.log.fatal("Failed to get CSI: %s" % str(e))
+            raise Exception('Failed to get CSI: ' + str(e))
 
 
     #################################################
